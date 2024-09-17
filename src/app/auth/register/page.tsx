@@ -1,6 +1,7 @@
 "use client";
 import AuthForm from "@/components/auth/AuthForm";
 import { useStatus } from "@/context/StatusContext";
+import { registerRequest } from "@/lib/axios/authService";
 import { AuthSchemas } from "@/schemas/auth";
 import Link from "next/link";
 import React from "react";
@@ -10,8 +11,15 @@ export default function Page() {
   const { startTransition, setStatus } = useStatus();
   const handleRegister = (values: zod.infer<typeof AuthSchemas>) => {
     startTransition(async () => {
-      console.log(values);
-      setStatus({ message: "deneme", statusCode: 200 });
+      try {
+        const response = await registerRequest(values);
+        setStatus({
+          message: response.message,
+          statusCode: response.statusCode,
+        });
+      } catch (error) {
+        setStatus({ message: "Bir hata oluştu.", statusCode: 500 });
+      }
     });
   };
 

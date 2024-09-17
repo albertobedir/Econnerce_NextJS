@@ -31,7 +31,7 @@ export const fields: Array<
 ];
 
 const AuthForm = ({ link, onSubmit, title, type }: AuthFormProps) => {
-  const { isPending, setStatus } = useStatus();
+  const { isPending, status, setStatus } = useStatus();
   const {
     register,
     handleSubmit,
@@ -58,6 +58,9 @@ const AuthForm = ({ link, onSubmit, title, type }: AuthFormProps) => {
       onSubmit={handleSubmit(submitForm)}
       className="w-full md:w-[60%] lg:w-[45%] xl:w-[35%] 2xl:w-[25%] flex flex-col gap-4 md:gap-6 p-[1rem]"
     >
+      <h1>
+        status: {status.message} code: {status.statusCode}
+      </h1>
       {title}
       {fields.map((item, i) => (
         <CInput

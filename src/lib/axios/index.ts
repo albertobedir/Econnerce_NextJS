@@ -9,6 +9,53 @@ export const api = axios.create({
   },
 });
 
+api.interceptors.request.use((config) => {
+  const access_token = localStorage.getItem("access_token");
+  if (access_token && !config.url?.includes("refresh")) {
+    config.headers["Authorization"] = `Bearer ${access_token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const { config, response } = error;
+    const originalRequest = config;
+    if (response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const rt = localStorage.getItem("refresh_token");
+      if (rt) {
+        try {
+          const response = await api.get("/auth/refresh", {
+            headers: {
+              Authorization: `Bearer ${rt}`,
+            },
+          });
+          const { access_token, refresh_token } = response.data;
+
+          localStorage.setItem("access_token", access_token);
+          localStorage.setItem("refresh_token", refresh_token);
+
+          originalRequest._retry = false;
+
+          api.defaults.headers["Authorization"] = `Bearer ${access_token}`;
+
+          return api(originalRequest);
+        } catch (error) {
+          originalRequest._retry = false;
+
+          return Promise.reject(error);
+        }
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 export const handleAxiosError = (error: unknown): ResponsePromise => {
   if (!axios.isAxiosError(error)) {
     return {

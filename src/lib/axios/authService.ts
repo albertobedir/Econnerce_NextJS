@@ -26,12 +26,22 @@ export const loginRequest = async (
       values
     );
     const { access_token, refresh_token } = response.data.tokens;
-    console.log(access_token);
-    console.log(refresh_token);
+    localStorage.setItem("access_token", access_token);
+    localStorage.setItem("refresh_token", refresh_token);
     return {
       message: response.data.message,
       statusCode: response.status,
     };
+  } catch (error) {
+    return handleAxiosError(error);
+  }
+};
+
+export const getSession = async (): Promise<ResponsePromise> => {
+  try {
+    const response = await api.get("/auth/get-session");
+    console.log(response);
+    return { message: response.statusText, statusCode: response.status };
   } catch (error) {
     return handleAxiosError(error);
   }

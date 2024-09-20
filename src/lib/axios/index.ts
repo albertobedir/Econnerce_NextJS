@@ -46,12 +46,14 @@ api.interceptors.response.use(
           return api(originalRequest);
         } catch (error) {
           originalRequest._retry = false;
-
-          return Promise.reject(error);
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          window.location.href = "/auth/login";
         }
       }
+      localStorage.removeItem("access_token");
+      window.location.href = "/auth/login";
     }
-
     return Promise.reject(error);
   }
 );

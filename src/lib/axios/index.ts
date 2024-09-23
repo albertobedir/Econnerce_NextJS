@@ -1,4 +1,5 @@
 import { ResponsePromise } from "@/types/axios";
+import { setTokens } from "@/utils/setTokens";
 import axios from "axios";
 
 export const api = axios.create({
@@ -10,10 +11,11 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const access_token = localStorage.getItem("access_token");
+  const access_token = setTokens({ method: "get", at: true })?.accessToken;
   if (access_token && !config.url?.includes("refresh")) {
     config.headers["Authorization"] = `Bearer ${access_token}`;
   }
+
   return config;
 });
 
@@ -23,10 +25,9 @@ api.interceptors.response.use(
   },
   async (error) => {
     const { config, response } = error;
-    const originalRequest = config;
-    if (response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      const rt = localStorage.getItem("refresh_token");
+    if (response.status === 401 && !config._retry) {
+      config._retry = true;
+      const rt = setTokens({ method: "get", rt: true })?.refreshToken;
       if (rt) {
         try {
           const response = await api.get("/auth/refresh", {
@@ -34,25 +35,22 @@ api.interceptors.response.use(
               Authorization: `Bearer ${rt}`,
             },
           });
+
           const { access_token, refresh_token } = response.data;
+          setTokens({ method: "set", at: access_token, rt: refresh_token });
 
-          localStorage.setItem("access_token", access_token);
-          localStorage.setItem("refresh_token", refresh_token);
-
-          originalRequest._retry = false;
-
+          config._retry = false;
           api.defaults.headers["Authorization"] = `Bearer ${access_token}`;
-
-          return api(originalRequest);
+          return api(config);
         } catch (error) {
-          originalRequest._retry = false;
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
+          config._retry = false;
+          setTokens({ method: "remove", at: true, rt: true });
           window.location.href = "/auth/login";
         }
+      } else {
+        setTokens({ method: "remove", at: true, rt: true });
+        window.location.href = "/auth/login";
       }
-      localStorage.removeItem("access_token");
-      window.location.href = "/auth/login";
     }
     return Promise.reject(error);
   }

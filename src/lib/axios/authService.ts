@@ -3,6 +3,7 @@ import * as zod from "zod";
 import { api, handleAxiosError } from ".";
 import { ResponsePromise, Tokens } from "@/types/axios";
 import { User } from "@/types/user/user";
+import { setTokens } from "@/utils/setTokens";
 
 export const registerRequest = async (
   values: zod.infer<typeof AuthSchemas>
@@ -13,8 +14,7 @@ export const registerRequest = async (
       values
     );
     const { access_token, refresh_token } = response.data.tokens;
-    localStorage.setItem("access_token", access_token);
-    localStorage.setItem("refresh_token", refresh_token);
+    setTokens({ method: "set", at: access_token, rt: refresh_token });
     return {
       message: response.data.message,
       statusCode: response.status,
@@ -33,8 +33,7 @@ export const loginRequest = async (
       values
     );
     const { access_token, refresh_token } = response.data.tokens;
-    localStorage.setItem("access_token", access_token);
-    localStorage.setItem("refresh_token", refresh_token);
+    setTokens({ method: "set", at: access_token, rt: refresh_token });
     return {
       message: response.data.message,
       statusCode: response.status,
@@ -50,21 +49,24 @@ export const logoutRequest = async () => {
   } catch (error) {
     throw new Error("An error occurred during logout. Please try again.");
   } finally {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    setTokens({ method: "remove", at: true, rt: true });
   }
 };
 
 export const getSession = async (): Promise<
-  (ResponsePromise & User) | ResponsePromise
+  (ResponsePromise & { user: User }) | ResponsePromise
 > => {
   try {
     const response = await api.get("/auth/get-session");
-    const user: User = response.data;
+
+    const user: User = {
+      ...response.data,
+    };
+
     return {
       message: response.statusText,
       statusCode: response.status,
-      ...user,
+      user,
     };
   } catch (error) {
     return handleAxiosError(error);

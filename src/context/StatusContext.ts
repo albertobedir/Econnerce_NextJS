@@ -13,7 +13,7 @@ export const StatusCtx = createContext<StatusCtxProps | undefined>(undefined);
 export const useStatus = () => {
   const ctx = useContext(StatusCtx);
   if (!ctx) {
-    throw Error("usePending must be used within an PendingProvider");
+    throw Error("useStatus must be used within an StatusProvider");
   }
   return ctx;
 };
